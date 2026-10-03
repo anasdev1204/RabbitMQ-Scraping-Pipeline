@@ -8,9 +8,21 @@ from helpers.rabbitMQ import (
 )
 
 
-
 class Producer:
+    """
+    Generic RabbitMQ producer that executes a scraper and publishes
+    the resulting items to a queue.
+    """
+
     def __init__(self, name: str, queue: str, scraper_fn):
+        """
+        Initialize a RabbitMQ producer.
+
+        Args:
+            name: Human-readable name used for logging.
+            queue: Name of the RabbitMQ queue to publish to.
+            scraper_fn: Function responsible for scraping the data.
+        """
         self.name = name
         self.queue = queue
         self.scraper_fn = scraper_fn
@@ -18,6 +30,13 @@ class Producer:
         self.channel = None
 
     def connect(self):
+        """
+        Establish a connection to RabbitMQ and declare the target queue.
+
+        Raises:
+            Exception: If the RabbitMQ connection, channel, or queue
+                configuration fails.
+        """
         self.connection, self.channel = connect_to_rabbitmq(
             CLOUDAMQP_URL
         )
@@ -34,9 +53,14 @@ class Producer:
             self.channel,
             self.queue
         )
-            
 
     def produce(self):
+        """
+        Run the scraper and publish the resulting items to RabbitMQ.
+
+        Each scraped item is published individually to the configured
+        queue. A failure to publish one item is logged without stopping the remaining items from being processed.
+        """
         logger.info(f"Starting {self.name} producer")
 
         scraped_data = self.scraper_fn()
@@ -58,19 +82,25 @@ class Producer:
                 )
 
                 logger.info(
-                    f"Queued {self.name} item: {sd.get('name', 'Unknown')}"
+                    f"Queued {self.name} item: "
+                    f"{sd.get('name', 'Unknown')}"
                 )
 
             except Exception as e:
                 logger.error(
-                    f"Failed to queue {self.name} item: {sd.get('name', 'Unknown')}. Error: {e}"
+                    f"Failed to queue {self.name} item: "
+                    f"{sd.get('name', 'Unknown')}. Error: {e}"
                 )
 
         logger.info(
-            f"Finished queueing {len(scraped_data)} {self.name} items"
+            f"Finished queueing {len(scraped_data)} "
+            f"{self.name} items"
         )
 
     def close(self):
+        """
+        Close the RabbitMQ connection if it is currently open.
+        """
         if self.connection and not self.connection.is_closed:
             self.connection.close()
 
@@ -79,6 +109,17 @@ class Producer:
             )
 
     def run(self):
+        """
+        Execute the complete producer lifecycle.
+
+        The lifecycle consists of connecting to RabbitMQ, producing
+        messages, and closing the connection regardless of whether
+        an error occurs.
+
+        Raises:
+            Exception: Re-raises any exception encountered during
+                connection or production.
+        """
         try:
             self.connect()
             self.produce()
