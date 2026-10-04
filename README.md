@@ -83,16 +83,15 @@ Each worker can consume one queue and publish the resulting tasks to another que
 │   └── helpers.py
 │
 ├── produce/
-│   └── ...
+│   └── producer.py
 │
 ├── scrape/
-│   ├── helpers.py
-│   └── ...
+│   └── scraper.py
 │
 ├── workers/
-│   ├── base.py
-│   ├── manager.py
-│   └── ...
+│   ├── worker.py
+│   └── manager.py
+│
 │
 ├── config.py
 ├── logger.py
@@ -186,7 +185,7 @@ For an HTML page:
 
 ```python
 from bs4 import BeautifulSoup
-from scrape.base import Scraper
+from scrape.scraper import Scraper
 
 
 class ProductScraper(Scraper):
@@ -204,7 +203,7 @@ class ProductScraper(Scraper):
 For an API:
 
 ```python
-from scrape.base import Scraper
+from scrape.scraper import Scraper
 
 
 class PlayerScraper(Scraper):
@@ -285,7 +284,7 @@ A scraper should ideally be tested independently before connecting it to the pip
 A producer executes a scraper and publishes the resulting items to a RabbitMQ queue.
 
 ```python
-from produce.base import Producer
+from produce.producer import Producer
 from scrape.products import scrape_products
 
 
@@ -321,7 +320,7 @@ RabbitMQ Queue
 A worker consumes messages from a queue and processes them.
 
 ```python
-from workers.base import Worker
+from workers.worker import Worker
 
 
 def process_products(message):
@@ -411,7 +410,7 @@ The worker manager can run multiple workers concurrently.
 
 ```python
 from workers.manager import WorkerManager
-from workers.base import Worker
+from workers.worker import Worker
 
 
 manager = WorkerManager([
